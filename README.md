@@ -1,10 +1,10 @@
-# Contract Review Panels
+# Contract Review Skill
 
 A Claude skill that runs the same five review prompts against a construction contract and builds one page with the full contract on the left and the five results on the right.
 
 This repository is an example. It shows how a skill like this is put together and what it can produce, using a publicly posted county contract. The prompts are a starting point for a first read of a construction contract, and the results are summaries that should be checked against the clauses they cite. Nothing here is legal advice.
 
-[See the sample page](https://marcus-erickson.github.io/ContractReviewSkill/) · [Download the skill](https://github.com/marcus-erickson/ContractReviewSkill/raw/main/contract-review-panels.skill)
+[See the sample page](https://marcus-erickson.github.io/ContractReviewSkill/) · [Download the skill](https://github.com/marcus-erickson/ContractReviewSkill/raw/main/contract-review-skill.skill)
 
 ## What it does
 
@@ -28,7 +28,7 @@ On the page, selecting a section reference in a result scrolls the contract to t
 
 ## Use the skill
 
-1. Download `contract-review-panels.skill` from this repository.
+1. Download `contract-review-skill.skill` from this repository.
 2. Add it to Claude as a custom skill.
 3. Attach a construction contract (PDF, Word, or text) to a conversation and ask Claude to run the contract review. If no contract is attached, Claude asks for one.
 
@@ -39,7 +39,7 @@ Claude publishes the result as a private page that you can share from the page's
 All five prompts live in one file:
 
 ```
-contract-review-panels/references/prompts.md
+contract-review-skill/references/prompts.md
 ```
 
 To change what the skill pulls out of a contract, edit that file. Each prompt has a numbered heading and a quoted block of text.
@@ -55,14 +55,14 @@ After editing, rebuild the download so the link serves the new prompts:
 python3 build_skill.py
 ```
 
-Commit the updated `contract-review-panels.skill`. Anyone who installs it again gets the new prompts.
+Commit the updated `contract-review-skill.skill`. Anyone who installs it again gets the new prompts.
 
 ## Rebuild the sample page
 
 The inputs for the sample are in `example/`. `contract.txt` is the contract text and `results.json` holds the five results. To regenerate `index.html`:
 
 ```
-python3 contract-review-panels/scripts/build_page.py example/contract.txt example/results.json index.html \
+python3 contract-review-skill/scripts/build_page.py example/contract.txt example/results.json index.html \
   --page-title "Contract Review Skill" --standalone --intro-file example/intro.html
 ```
 
@@ -82,13 +82,13 @@ The model writes the results, and the scripts handle layout and linking, so the 
 .
 ├── README.md
 ├── index.html                      Sample page, served by GitHub Pages
-├── contract-review-panels.skill    The downloadable skill
+├── contract-review-skill.skill     The downloadable skill
 ├── build_skill.py                  Rebuilds the .skill file from the skill folder
 ├── example/
 │   ├── contract.txt                Contract text used for the sample
 │   ├── results.json                The five results shown in the sample
 │   └── intro.html                  Introduction shown above the sample on the page
-└── contract-review-panels/         The skill itself
+└── contract-review-skill/          The skill itself
     ├── SKILL.md                    Instructions Claude follows
     ├── references/prompts.md       The five prompts
     ├── scripts/build_page.py       Builds the two-pane page

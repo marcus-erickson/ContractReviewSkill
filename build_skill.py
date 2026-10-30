@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild contract-review-panels.skill from the contract-review-panels folder.
+"""Rebuild contract-review-skill.skill from the contract-review-skill folder.
 
 Run this after you edit the prompts or any other file in the skill folder, then
 commit the new .skill file so the download link serves the updated version.
@@ -13,8 +13,8 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-SKILL_DIR = ROOT / "contract-review-panels"
-OUT = ROOT / "contract-review-panels.skill"
+SKILL_DIR = ROOT / "contract-review-skill"
+OUT = ROOT / "contract-review-skill.skill"
 SKIP_DIRS = {"__pycache__", "evals"}
 SKIP_NAMES = {".DS_Store"}
 
@@ -29,7 +29,7 @@ def main():
         and p.suffix != ".pyc"
     )
     if not (SKILL_DIR / "SKILL.md").exists():
-        raise SystemExit("contract-review-panels/SKILL.md not found. Run this from the repository folder.")
+        raise SystemExit("contract-review-skill/SKILL.md not found. Run this from the repository folder.")
     with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED) as z:
         for p in files:
             z.write(p, p.relative_to(ROOT).as_posix())

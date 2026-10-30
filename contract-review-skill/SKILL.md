@@ -1,9 +1,9 @@
 ---
-name: contract-review-panels
-description: Run a fixed set of five review prompts (Payment Terms, Changes and Claims, Schedule and Delay, Risk Transfer, Termination and Disputes) against a construction contract and publish one two-pane page with the full contract on the left and the five short results on the right, with clickable section citations. Use this whenever the user says "run the contract review", "run this against the contract", "contract panels", asks for a side-by-side summary of a construction contract, subcontract, prime contract, or owner-GC agreement, or attaches a contract and wants the key terms pulled out, even if they never name the skill. If no contract is provided, ask for one.
+name: contract-review-skill
+description: Run a fixed set of five review prompts (Payment Terms, Changes and Claims, Schedule and Delay, Risk Transfer, Termination and Disputes) against a construction contract and publish one two-pane page with the full contract on the left and the five short results on the right, with clickable section citations. Use this whenever the user says "run the contract review", "run this against the contract", "contract review skill", asks for a side-by-side summary of a construction contract, subcontract, prime contract, or owner-GC agreement, or attaches a contract and wants the key terms pulled out, even if they never name the skill. If no contract is provided, ask for one.
 ---
 
-# Contract review panels
+# Contract Review Skill
 
 This skill takes one construction contract, runs five fixed prompts against it, and publishes a page that shows the whole contract next to the five results. Every contract gets the same five lenses, so results are comparable from one contract to the next and anyone on the team can run it without writing prompts.
 
