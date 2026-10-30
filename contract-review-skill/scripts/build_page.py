@@ -213,6 +213,339 @@ def render_result(body, resolve):
 
 # --------------------------------------------------------------------- page
 
+DEFAULT_STARTERS = [
+    "Which provisions are most one-sided, and who do they favor?",
+    "List every notice deadline in this contract.",
+    "What happens if the work finishes late?",
+    "Explain the insurance requirements in plain language.",
+]
+
+HEAD_RIGHT_CHAT = (
+    '<span class="head-right"><span class="seg" id="seg" hidden>'
+    '<button type="button" data-rv="res" aria-pressed="true">Results</button>'
+    '<button type="button" data-rv="chat" aria-pressed="false">Ask Claude</button></span>'
+    '<span id="rescount">{{RESULT_COUNT}} prompts</span></span>'
+)
+
+CHAT_CSS = r"""
+/* Ask Claude: a second view in the results pane, shown only when the page can reach Claude. */
+.head-right { display: inline-flex; align-items: baseline; gap: 10px; }
+.seg[hidden] { display: none; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; letter-spacing: 0; text-transform: none; }
+.seg button { font: inherit; font-size: 12px; font-weight: 500; padding: 3px 10px; border: 0; background: var(--paper); color: var(--ink); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--paper); }
+#res-pane[data-rv="chat"] .legend, #res-pane[data-rv="chat"] .results, #res-pane[data-rv="chat"] .note { display: none; }
+.chat { padding: 0 18px 24px; }
+.chat-intro { margin: 0; padding-top: 12px; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; }
+.chips button { font: inherit; font-size: 12.5px; line-height: 1.35; padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); text-align: left; cursor: pointer; }
+.chatlog { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; }
+.cb { padding: 9px 12px; border-radius: 6px; font-size: 14px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cb.me { align-self: flex-end; max-width: 88%; background: var(--accent); color: var(--paper); }
+.cb.ai { background: var(--paper); border: 1px solid var(--line); }
+.cb.ai.done { white-space: normal; }
+.cb.ai p { margin: 0 0 8px; }
+.cb.ai p:last-child { margin: 0; }
+.cb.ai ul { margin: 0 0 8px; padding-left: 18px; }
+.cb.ai li { margin: 0 0 4px; }
+.composer { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.composer textarea { width: 100%; min-height: 56px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); font: inherit; font-size: 14px; line-height: 1.5; resize: vertical; }
+.cbtns { display: flex; flex-wrap: wrap; gap: 8px; }
+.cbtns button { font: inherit; font-size: 13px; font-weight: 500; padding: 6px 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); cursor: pointer; }
+.cbtns #chatsend { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+.chips button:disabled, .cbtns button:disabled { opacity: .55; cursor: default; }
+.chat-note { margin: 12px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.sent { margin-top: 14px; font-size: 12.5px; color: var(--muted); }
+.sent p { margin: 6px 0 0; line-height: 1.5; }
+"""
+
+CHAT_HTML = r"""
+      <section class="chat" id="chat" hidden aria-label="Ask Claude about this contract">
+        <p class="chat-intro">Ask anything about the contract on the left. Answers come only from its text, and section references link to the clause. Questions use your own Claude account.</p>
+        <div class="chips" id="chips"></div>
+        <div class="chatlog" id="chatlog" aria-live="polite"></div>
+        <div class="composer">
+          <textarea id="chatin" rows="2" placeholder="Ask a question about this contract" aria-label="Question"></textarea>
+          <div class="cbtns">
+            <button type="button" id="chatsend">Ask</button>
+            <button type="button" id="chatstop" hidden>Stop</button>
+            <button type="button" id="chatclear">Clear</button>
+          </div>
+        </div>
+        <p class="chat-note" id="chatnote" hidden></p>
+        <details class="sent"><summary>What gets sent to Claude</summary><p id="sentnote"></p></details>
+        <script type="application/json" id="chat-data">{{CHAT_DATA}}</script>
+      </section>
+"""
+
+CHAT_JS = r"""<script>
+(function () {
+  var seg = document.getElementById("seg");
+  var chat = document.getElementById("chat");
+  var res = document.getElementById("res-pane");
+  if (!seg || !chat || !res) return;
+  var $ = function (id) { return document.getElementById(id); };
+  var data = {};
+  try { data = JSON.parse($("chat-data").textContent); } catch (e) { data = {}; }
+  var KEYS = data.keys || {};
+  var STARTERS = data.starters || [];
+  var MAX_BYTES = 180000;
+  var KEEP_TURNS = 13;
+  var RULES = "You are helping someone read a construction contract that is shown beside this chat. " +
+    "Answer only from the contract text and the summaries below. Cite the section for every point, written like (Section 3.2) or (Ex. A.7) with the numbering printed in the contract, so the reader can select it. " +
+    "If the contract does not address something, say 'Not addressed in this contract' and do not fill the gap from general practice. If it relies on a document that was not included, say so. " +
+    "Write plainly for a construction professional, in short paragraphs, with a list only when comparing items, and keep answers under about 200 words unless asked for more. " +
+    "Do not use em dashes. Your answers are summaries to check against the cited clauses and are not legal advice.";
+  var MSG = {
+    rate_limited: "Too many requests, or a usage limit was reached. Try again later.",
+    session_expired: "Sign in again to use the chat.",
+    cancelled: "Stopped.",
+    prompt_too_large: "That was too large to send. Clear the conversation and try again.",
+    refused: "Claude declined that question. Try rewording it.",
+    empty_completion: "Claude returned nothing. Try rewording the question.",
+    upstream_error: "Something went wrong. Try again."
+  };
+  var PERMANENT = ["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"];
+
+  // ---- Section references in answers become links, using the same rules as the five results ----
+  var ROMAN = { I: 1, V: 5, X: 10, L: 50, C: 100 };
+  function roman(s) {
+    var t = 0, p = 0;
+    for (var i = s.length - 1; i >= 0; i--) { var v = ROMAN[s.charAt(i)]; t = v < p ? t - v : t + v; p = v; }
+    return t;
+  }
+  function normKey(raw, ex) {
+    var k = raw.replace(/\([^)]*\)/g, "").replace(/^[. ]+|[. ]+$/g, "");
+    var parts = k.split(".");
+    if (!ex && /^[IVXLC]+$/.test(parts[0]) && (parts.length === 1 || parts[0].length > 1)) parts[0] = String(roman(parts[0]));
+    return parts.filter(Boolean).join(".");
+  }
+  function resolve(raw, ex) {
+    var k = normKey(raw, ex);
+    while (k) {
+      if (Object.prototype.hasOwnProperty.call(KEYS, k)) return KEYS[k];
+      var i = k.lastIndexOf(".");
+      if (i < 0) break;
+      k = k.slice(0, i);
+    }
+    return null;
+  }
+  var NUM = "(?:\\d+(?:\\.\\d+)*(?:\\([A-Za-z0-9]{1,4}\\))*|[IVXLC]{1,6}\\b(?:\\.\\d+)*)";
+  var NUM_RE = new RegExp(NUM, "g");
+  var CITE_RE = new RegExp("((?<![A-Za-z])(?:Arts?\\.?|Articles?|Secs?\\.?|Sections?|§§?|¶)\\s*)(" + NUM +
+    "(?:\\s*(?:,|;|and|&amp;|-|–|to|through)\\s*" + NUM + ")*)", "g");
+  var EXNUM = "[A-Z]\\b(?:\\.(?:\\d+|[IVX]{1,4}\\b)(?:\\.\\d+)*)?";
+  var EXNUM_RE = new RegExp(EXNUM, "g");
+  var EX_RE = new RegExp("((?<![A-Za-z])(?:Exhibits?|Exhs?\\.|Exs?\\.)\\s*)(" + EXNUM +
+    "(?:\\s*(?:,|and|&amp;)\\s*" + EXNUM + ")*)", "g");
+  function linker(ex) {
+    return function (m) {
+      var bid = resolve(m, ex);
+      return bid ? '<button type="button" class="cite" data-target="' + bid + '">' + m + "</button>" : m;
+    };
+  }
+  function renderAnswer(raw) {
+    var esc = raw.trim().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    esc = esc.replace(EX_RE, function (all, pre, nums) { return pre + nums.replace(EXNUM_RE, linker(true)); });
+    esc = esc.replace(CITE_RE, function (all, pre, nums) { return pre + nums.replace(NUM_RE, linker(false)); });
+    esc = esc.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    var out = [], para = [], items = [];
+    function flushP() { if (para.length) { out.push("<p>" + para.join(" ") + "</p>"); para = []; } }
+    function flushL() {
+      if (items.length) {
+        out.push("<ul>" + items.map(function (i) { return "<li>" + i + "</li>"; }).join("") + "</ul>");
+        items = [];
+      }
+    }
+    esc.split("\n").forEach(function (line) {
+      var s = line.trim();
+      if (!s) { flushP(); flushL(); return; }
+      var m = /^(?:[-*•]|\d+[.)])\s+(.*)$/.exec(s);
+      if (m) { flushP(); items.push(m[1]); } else { flushL(); para.push(s); }
+    });
+    flushP();
+    flushL();
+    return out.join("");
+  }
+
+  // ---- What Claude is sent: the contract text, or a search tool when the contract is too long to send whole ----
+  var enc = new TextEncoder();
+  function size(s) { return enc.encode(s).length; }
+  function refFor(key) { return !key ? "" : /^[A-Z](\.|$)/.test(key) ? "Ex. " + key : "Section " + key; }
+  function readBlocks() {
+    return Array.prototype.map.call(document.querySelectorAll("#doc-pane .blk"), function (el) {
+      var text = Array.prototype.filter.call(el.childNodes, function (n) { return n.nodeType === 3; })
+        .map(function (n) { return n.textContent; }).join("");
+      return { text: text, key: el.getAttribute("data-key") || "", head: el.classList.contains("h") };
+    });
+  }
+  function readSummaries() {
+    return "SUMMARIES ALREADY SHOWN TO THE READER (written earlier from the same text, so they can contain mistakes):\n\n" +
+      Array.prototype.map.call(document.querySelectorAll("#res-pane .res"), function (r) {
+        return r.querySelector("h2").textContent + ": " + r.querySelector(".body").textContent.replace(/\s+/g, " ").trim();
+      }).join("\n\n");
+  }
+  function buildDigest(canTools) {
+    var blocks = readBlocks();
+    var body = blocks.map(function (b) { return b.text; }).join("\n\n");
+    var words = body.split(/\s+/).length;
+    var sums = readSummaries();
+    if (size(body) <= MAX_BYTES) {
+      return { mode: "full", tools: [], words: words, text: "CONTRACT TEXT (section numbers as printed in the contract):\n\n" + body + "\n\n" + sums };
+    }
+    if (canTools) {
+      var outline = blocks.filter(function (b) { return b.head || (b.key && b.key.indexOf(".") < 0); }).slice(0, 400)
+        .map(function (b) { return (b.key ? refFor(b.key) + ": " : "") + b.text.slice(0, 90); }).join("\n");
+      var tool = {
+        name: "find_sections",
+        description: "Search the contract text. Returns up to 8 numbered paragraphs that best match the words you give, each with its section reference as printed (ref) and its text. Use it before answering any question about what the contract says, and search again with other words if the first results do not answer the question.",
+        inputSchema: { type: "object", properties: { words: { type: "string", description: "keywords to look for, for example: retainage release" } }, required: ["words"] },
+        execute: function (a) {
+          var ws = String((a && a.words) || "").toLowerCase().split(/\s+/).filter(function (w) { return w.length > 2; });
+          if (!ws.length) return { total: 0, rows: [] };
+          var scored = [];
+          blocks.forEach(function (b) {
+            var t = b.text.toLowerCase(), distinct = 0, hits = 0;
+            ws.forEach(function (w) { var n = t.split(w).length - 1; if (n) { distinct++; hits += n; } });
+            if (distinct) scored.push({ s: distinct * 100 + Math.min(hits, 50), b: b });
+          });
+          scored.sort(function (x, y) { return y.s - x.s; });
+          return { total: scored.length, rows: scored.slice(0, 8).map(function (x) { return { ref: refFor(x.b.key), text: x.b.text.slice(0, 1800) }; }) };
+        }
+      };
+      return { mode: "search", tools: [tool], words: words, text: "This contract is too long to send whole. Below is an outline of its headings. Use the find_sections tool to read the wording of any clause before you answer.\n\nOUTLINE:\n" + outline + "\n\n" + sums };
+    }
+    var kept = [], used = 0;
+    for (var i = 0; i < blocks.length; i++) {
+      var n = size(blocks[i].text) + 2;
+      if (used + n > MAX_BYTES) break;
+      kept.push(blocks[i].text);
+      used += n;
+    }
+    return { mode: "cut", tools: [], words: words, kept: kept.length, total: blocks.length, text: "CONTRACT TEXT, FIRST PART ONLY (the contract was too long to send whole, so say so if the answer may be in a part you cannot see):\n\n" + kept.join("\n\n") + "\n\n" + sums };
+  }
+
+  // ---- The chat ----
+  function start(sample, canTools) {
+    var d = buildDigest(canTools);
+    var log = $("chatlog"), input = $("chatin"), sendBtn = $("chatsend"), stopBtn = $("chatstop"), clearBtn = $("chatclear");
+    var cnt = $("rescount");
+    var turns = [], ctl = null;
+    var sent = {
+      full: "With every question Claude is sent the full text of the contract shown on the left (about " + d.words.toLocaleString() + " words), the summaries on this page, and this conversation. Nothing else leaves the page.",
+      search: "Claude is sent an outline of the contract, the summaries on this page, and this conversation. When it needs the wording of a clause it asks the page to search the contract, and only the matching paragraphs are sent.",
+      cut: "Claude is sent the first " + d.kept + " of " + d.total + " paragraphs of the contract, because it is too long to send whole, along with the summaries on this page and this conversation."
+    };
+    $("sentnote").textContent = sent[d.mode];
+    if (d.mode !== "full") {
+      var note = $("chatnote");
+      note.hidden = false;
+      note.textContent = d.mode === "search"
+        ? "This contract is long, so Claude searches it instead of reading it whole. An answer can miss a clause that the search does not find."
+        : "This contract is long, so Claude can read only the first part of it.";
+    }
+    function setBusy(b) {
+      sendBtn.disabled = b;
+      clearBtn.disabled = b;
+      stopBtn.hidden = !b;
+      document.querySelectorAll("#chips button").forEach(function (x) { x.disabled = b; });
+    }
+    function bubble(who, text) {
+      var el = document.createElement("div");
+      el.className = "cb " + who;
+      el.textContent = text;
+      log.appendChild(el);
+      res.scrollTop = res.scrollHeight;
+      return el;
+    }
+    async function ask(q) {
+      q = (q || "").trim();
+      if (!q || ctl) return;
+      bubble("me", q);
+      var out = bubble("ai", "Thinking...");
+      input.value = "";
+      turns.push({ role: "user", content: q });
+      ctl = new AbortController();
+      setBusy(true);
+      var msgs = [{ role: "user", content: RULES + "\n\n" + d.text }].concat(turns.slice(-KEEP_TURNS));
+      var opts = { cache: false, signal: ctl.signal, onText: function (u) { out.textContent = u.text; res.scrollTop = res.scrollHeight; } };
+      if (d.tools.length) opts.tools = d.tools;
+      try {
+        var r = await sample(msgs, opts);
+        out.className = "cb ai done";
+        out.innerHTML = renderAnswer(r.text) + (r.truncated ? '<p class="cut">Cut short. Ask for less at a time.</p>' : "");
+        turns.push({ role: "assistant", content: r.text });
+      } catch (e) {
+        turns.pop();
+        var code = e && e.code;
+        if (PERMANENT.indexOf(code) >= 0) {
+          setRv("res");
+          seg.hidden = true;
+          if (cnt) cnt.hidden = false;
+        } else {
+          out.textContent = (e && e.text ? e.text + "\n\n" : "") + (MSG[code] || MSG.upstream_error);
+        }
+      } finally {
+        ctl = null;
+        setBusy(false);
+      }
+    }
+    STARTERS.forEach(function (q) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = q;
+      b.addEventListener("click", function () { ask(q); });
+      $("chips").appendChild(b);
+    });
+    sendBtn.addEventListener("click", function () { ask(input.value); });
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); ask(input.value); }
+    });
+    stopBtn.addEventListener("click", function () { if (ctl) ctl.abort(); });
+    clearBtn.addEventListener("click", function () { turns = []; log.innerHTML = ""; });
+    seg.hidden = false;
+    if (cnt) cnt.hidden = true;
+  }
+
+  function setRv(v) {
+    res.setAttribute("data-rv", v);
+    chat.hidden = v !== "chat";
+    seg.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-rv") === v ? "true" : "false"); });
+    res.scrollTop = 0;
+  }
+  seg.addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (b) setRv(b.getAttribute("data-rv"));
+  });
+
+  (async function () {
+    var sample = null;
+    try { sample = window.claude && window.claude.use ? await window.claude.use("sample") : null; } catch (e) { sample = null; }
+    if (!sample) return;
+    var canTools = false;
+    try { canTools = !!((await sample.limits()).tools); } catch (e) { canTools = false; }
+    start(sample, canTools);
+  })();
+})();
+</script>
+"""
+
+
+def chat_parts(index, starters):
+    """Return (css, html, js) for the Ask Claude view."""
+    payload = json.dumps({"keys": index, "starters": starters}, ensure_ascii=False).replace("<", "\\u003c")
+    return CHAT_CSS, CHAT_HTML.replace("{{CHAT_DATA}}", payload), CHAT_JS
+
+
+def clean_starters(raw):
+    if isinstance(raw, list):
+        items = [s.strip() for s in raw if isinstance(s, str) and s.strip()]
+        if items:
+            return items[:6]
+    return list(DEFAULT_STARTERS)
+
+
+
 TEMPLATE = r'''<title>{{PAGE_TITLE}}</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -316,7 +649,7 @@ button.cite:hover { text-decoration-style: solid; }
   .app[data-view="res"] #res-pane, .app[data-view="doc"] #doc-pane { display: block; }
   .doc { padding: 14px 14px 32px; }
 }
-</style>
+{{CHAT_CSS}}</style>
 <div class="app" data-view="res">
   <header class="top">
     <div>
@@ -337,12 +670,13 @@ button.cite:hover { text-decoration-style: solid; }
       </div>
     </section>
     <section class="pane" id="res-pane" aria-label="Review results">
-      <div class="pane-head"><span>Review</span><span>{{RESULT_COUNT}} prompts</span></div>
+      <div class="pane-head"><span>Review</span>{{HEAD_RIGHT}}</div>
       <p class="legend">Numbers in the contract margin show which results cite that section. Select a section reference to jump to it.</p>
       <div class="results">
 {{RESULTS}}
       </div>
       <p class="note">Each result is drawn only from the contract text on the left and is not legal advice. Check every point against the section it cites.</p>
+{{CHAT_HTML}}
     </section>
   </main>
 </div>
@@ -392,7 +726,7 @@ button.cite:hover { text-decoration-style: solid; }
   });
 })();
 </script>
-'''
+{{CHAT_JS}}'''
 
 
 STANDALONE_CSS = """<style>
@@ -449,7 +783,7 @@ def to_standalone(page, intro_html):
     )
 
 
-def build(contract_text, data, page_title):
+def build(contract_text, data, page_title, chat=True):
     blocks, index = parse_contract(contract_text)
     resolve = resolver(index)
     results = data["results"]
@@ -489,6 +823,10 @@ def build(contract_text, data, page_title):
             f'        <div class="{cls}" id="b{i}"{key_attr}>{tag_html}{html.escape(text, quote=False)}</div>'
         )
 
+    chat_css = chat_html = chat_js = ""
+    if chat:
+        chat_css, chat_html, chat_js = chat_parts(index, clean_starters(data.get("starters")))
+
     subtitle = data.get("subtitle", "").strip()
     page = (
         TEMPLATE.replace("{{PAGE_TITLE}}", html.escape(page_title))
@@ -496,7 +834,11 @@ def build(contract_text, data, page_title):
         .replace("{{SUBTITLE}}", f'<p class="sub">{html.escape(subtitle)}</p>' if subtitle else "")
         .replace("{{BLOCK_COUNT}}", str(len(blocks)))
         .replace("{{SECTION_COUNT}}", str(len(index)))
+        .replace("{{HEAD_RIGHT}}", HEAD_RIGHT_CHAT if chat else "<span>{{RESULT_COUNT}} prompts</span>")
         .replace("{{RESULT_COUNT}}", str(len(results)))
+        .replace("{{CHAT_CSS}}", chat_css)
+        .replace("{{CHAT_HTML}}", chat_html)
+        .replace("{{CHAT_JS}}", chat_js)
         .replace("{{DOC}}", "\n".join(doc_parts))
         .replace("{{RESULTS}}", "\n".join(cards))
     )
@@ -510,6 +852,7 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--page-title", default="Contract Review")
     ap.add_argument("--standalone", action="store_true", help="write a complete HTML document instead of an artifact fragment")
+    ap.add_argument("--no-chat", action="store_true", help="leave out the Ask Claude view (always left out with --standalone)")
     ap.add_argument("--intro-file", default="", help="standalone only: HTML fragment shown above the sample")
     a = ap.parse_args()
 
@@ -522,7 +865,7 @@ def main():
         if not r.get("title") or not r.get("body"):
             sys.exit("Every result needs a non-empty 'title' and 'body'.")
 
-    page, blocks, index, report = build(text, data, a.page_title)
+    page, blocks, index, report = build(text, data, a.page_title, chat=not (a.no_chat or a.standalone))
     if a.standalone:
         intro = Path(a.intro_file).read_text(encoding="utf-8") if a.intro_file else ""
         page = to_standalone(page, intro)

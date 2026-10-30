@@ -22,6 +22,8 @@ Each result is 100 to 150 words and cites the sections it relies on. When the co
 
 On the page, selecting a section reference in a result scrolls the contract to that clause. Small numbered tags in the contract margin show which results cite each section, and a button under each result highlights every section it cites.
 
+The page Claude publishes also has an **Ask Claude** tab beside the results. The viewer can ask their own questions about the contract, and answers cite sections that link to the clause. Each question spends the viewer's own Claude usage, and a very long contract is searched instead of sent whole. The sample on GitHub Pages is a static page and does not include the chat, because it only works inside Claude.
+
 ## The sample
 
 `index.html` is the skill run against the agreement between Fort Bend County, Texas and Brookstone, LP for the Justice Center Expansion (RFP 17-037). The county posted the agreement publicly, and the [source PDF](https://agendalink.fortbendcountytx.gov/docs/2017/CCTR/20170214_2900/25417_R17-037.Brookstone.Agreement.pdf) is on its agenda site. The page shows the agreement and Exhibit A, the contractor's proposal. It leaves out the schedule of values, the specification listing, and the wage determination, because they are tables that do not extract cleanly. The signature blocks in the posted copy are blank.
@@ -66,7 +68,7 @@ python3 contract-review-skill/scripts/build_page.py example/contract.txt example
   --page-title "Contract Review Skill" --standalone --intro-file example/intro.html
 ```
 
-Without `--standalone`, the script writes the version that Claude publishes as an artifact. With it, the script writes a complete HTML page that works on GitHub Pages or any other web host, with the text from `example/intro.html` above the sample. Edit that file to change the introduction, the buttons, or the links at the top of the page.
+Without `--standalone`, the script writes the version that Claude publishes as an artifact, with the Ask Claude tab (add `--no-chat` to leave it out). With it, the script writes a complete HTML page that works on GitHub Pages or any other web host, with the text from `example/intro.html` above the sample. Edit that file to change the introduction, the buttons, or the links at the top of the page.
 
 ## How it works
 

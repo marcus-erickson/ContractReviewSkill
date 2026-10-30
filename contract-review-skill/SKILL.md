@@ -1,6 +1,6 @@
 ---
 name: contract-review-skill
-description: Run a fixed set of five review prompts (Payment Terms, Changes and Claims, Schedule and Delay, Risk Transfer, Termination and Disputes) against a construction contract and publish one two-pane page with the full contract on the left and the five short results on the right, with clickable section citations. Use this whenever the user says "run the contract review", "run this against the contract", "contract review skill", asks for a side-by-side summary of a construction contract, subcontract, prime contract, or owner-GC agreement, or attaches a contract and wants the key terms pulled out, even if they never name the skill. If no contract is provided, ask for one.
+description: Run a fixed set of five review prompts (Payment Terms, Changes and Claims, Schedule and Delay, Risk Transfer, Termination and Disputes) against a construction contract and publish one two-pane page with the full contract on the left and the five short results on the right, with clickable section citations and an Ask Claude chat for follow-up questions about the contract. Use this whenever the user says "run the contract review", "run this against the contract", "contract review skill", asks for a side-by-side summary of a construction contract, subcontract, prime contract, or owner-GC agreement, or attaches a contract and wants the key terms pulled out, even if they never name the skill. If no contract is provided, ask for one.
 ---
 
 # Contract Review Skill
@@ -44,6 +44,7 @@ Hold to the rules in the shared instructions, because the page depends on them:
 {
   "contract_title": "Northline Mechanical Subcontract",
   "subtitle": "Bayou City Builders, LLC · Harmon Medical Office Building",
+  "starters": ["Which provisions are most one-sided, and who do they favor?", "List every notice deadline in this contract."],
   "results": [
     {"title": "Payment Terms", "body": "Pay applications are due by the 25th (Art. 3.1). ..."},
     {"title": "Changes and Claims", "body": "..."}
@@ -71,12 +72,13 @@ Do not edit the generated HTML by hand. To change the look, change the template 
 
 ## Step 6: Publish and finish
 
-Publish `contract-review.html` with the Artifact tool, using a short generic icon such as "contract" and a one-sentence description naming the contract. The page is already designed and follows the artifact page rules, so there is no need to rewrite it.
+Publish `contract-review.html` with the Artifact tool, using a short generic icon such as "contract", a one-sentence description naming the contract, and `capabilities: {"sample": {}}`. The capability switches on the Ask Claude view, a second tab next to the results where the viewer can ask their own questions about the contract. Leave it out and the page still works, without the chat. The page is already designed and follows the artifact page rules, so there is no need to rewrite it.
 
 The page contains the full contract text and is private until the user shares it. Say so in one short line when you hand it over. Then give the user one or two sentences on what came out: the topics the contract does not address and the one or two flags that matter most, since those are what they will look for first. Do not recap the steps.
 
 ## Notes
 
 - The results are summaries drawn from the contract text. The page footer says they are not legal advice, and results should be checked against the cited section.
-- To add a follow-up chat to the page, load the artifact-capabilities skill and add an "ask Claude" capability to the template. The base version does not include one.
-- For a page outside Claude, such as GitHub Pages, add `--standalone` to the build command. It writes a complete HTML document instead of the artifact version. `--intro-file` takes an HTML fragment, such as a heading, a paragraph, and a few links, that is shown above the sample.
+- `starters` in results.json is optional. It holds up to six example questions shown as buttons in the chat, and when it is missing the page uses four general ones. Write ones that fit this contract if something stands out.
+- The chat sends Claude the contract text, the five results, and the conversation, and answers with section links like the results. A contract too long to send whole is searched instead, through a tool the page provides. The questions use the viewer's own Claude usage, and the chat hides itself when the page is opened where Claude is not reachable. Use `--no-chat` to build without it.
+- For a page outside Claude, such as GitHub Pages, add `--standalone` to the build command. It writes a complete HTML document instead of the artifact version, and that version has no chat because it cannot reach Claude. `--intro-file` takes an HTML fragment, such as a heading, a paragraph, and a few links, that is shown above the sample.
