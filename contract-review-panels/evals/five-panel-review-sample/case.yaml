@@ -1,0 +1,9 @@
+schema_version: "1.1"
+name: five-panel-review-sample
+context:
+  scaffold_script: place-files.sh
+expected_outcome: |
+  A single self-contained HTML page showing the full subcontract text in one pane and five short results in another,
+  headed Payment Terms, Changes and Claims, Schedule and Delay, Risk Transfer, and Termination and Disputes.
+  Each result is 100 to 150 words, cites article and section numbers that exist in the contract, and says
+  "Not addressed in this contract" for topics the contract does not cover (for example bonds).

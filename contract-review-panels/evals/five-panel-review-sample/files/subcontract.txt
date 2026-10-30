@@ -1,0 +1,85 @@
+SUBCONTRACT AGREEMENT
+
+This Subcontract Agreement ("Subcontract") is made as of March 3, 2026, between Bayou City Builders, LLC ("Contractor") and Northline Mechanical, Inc. ("Subcontractor") for the HVAC and plumbing work on the Harmon Medical Office Building in Sugar Land, Texas (the "Project"). Contractor holds a prime contract with Harmon Health Partners, LP ("Owner") (the "Prime Contract"). This is a sample agreement with fictional parties, written for testing.
+
+ARTICLE 1 - SCOPE OF WORK
+
+1.1 Subcontractor shall furnish all labor, material, equipment, and supervision for the mechanical and plumbing work shown in the Contract Documents (the "Work").
+
+1.2 The Contract Documents include this Subcontract, the Prime Contract, and the drawings and specifications dated January 12, 2026. Subcontractor is bound to Contractor to the same extent Contractor is bound to Owner under the Prime Contract, and shall flow those obligations down to its own lower-tier subcontractors.
+
+ARTICLE 2 - CONTRACT PRICE
+
+2.1 The Contract Price is $2,480,000, subject to adjustment only by written Change Order.
+
+2.2 The Contract Price includes all taxes, permits, and fees related to the Work, except the building permit.
+
+ARTICLE 3 - PAYMENT
+
+3.1 Subcontractor shall submit a pay application by the 25th day of each month for Work completed through the end of that month, in the form required by Contractor.
+
+3.2 Contractor shall pay Subcontractor within seven (7) days after Contractor receives payment from Owner for Subcontractor's Work. Receipt of payment from Owner is a condition precedent to Contractor's obligation to pay.
+
+3.3 Contractor shall withhold retainage of ten percent (10%) of each payment. Retainage will be released within thirty (30) days after Final Completion of the entire Project and receipt of Owner's final payment to Contractor. Retainage is not reduced at substantial completion.
+
+3.4 Each pay application must include a conditional lien waiver and release for the current period and an unconditional waiver for the prior period.
+
+3.5 Contractor may withhold or set off from any payment amounts it reasonably believes are owed to it by Subcontractor under this or any other agreement between the parties, and amounts for defective Work, claims by third parties, or liquidated damages.
+
+3.6 Final payment is due after Final Completion, delivery of close-out documents, warranties, and final lien waivers, and Owner's final payment to Contractor.
+
+ARTICLE 4 - CHANGES
+
+4.1 Only Contractor's authorized project manager may order changes, and only by written Change Order. Subcontractor shall not be paid for extra Work performed without a signed Change Order.
+
+4.2 Subcontractor shall submit a written request for any adjustment in price or time within five (5) business days after the event giving rise to it. Failure to give timely notice waives the claim.
+
+4.3 Change Orders shall be priced by lump sum, unit prices, or time and materials, with overhead and profit limited to a combined ten percent (10%) on Subcontractor's own work and five percent (5%) on lower-tier work.
+
+4.4 Subcontractor shall continue to perform the Work, including disputed changes, pending resolution of any claim.
+
+ARTICLE 5 - SCHEDULE
+
+5.1 Subcontractor shall commence Work within three (3) days after written notice to proceed and achieve Substantial Completion of its Work by November 20, 2026, in accordance with the Project Schedule, which Contractor may update from time to time.
+
+5.2 If Subcontractor fails to achieve Substantial Completion by that date, Subcontractor shall pay liquidated damages of $1,500 per calendar day until completion. Liquidated damages are not capped.
+
+5.3 Subcontractor may request an extension of time only for delays caused by Owner or Contractor, or by weather beyond what is normal for the location, and only if notice is given under Section 4.2. Contractor's liability for delay is limited to an extension of time. Subcontractor waives all claims for damages for delay, disruption, or acceleration, including those caused by Contractor.
+
+5.4 Subcontractor shall provide a two-week look-ahead schedule every Friday.
+
+ARTICLE 6 - INDEMNITY
+
+6.1 To the fullest extent permitted by law, Subcontractor shall indemnify, defend, and hold harmless Contractor, Owner, and their officers and employees from all claims, damages, losses, and expenses, including attorneys' fees, arising out of or resulting from the Work or Subcontractor's breach, regardless of whether caused in part by an indemnified party, but not to the extent caused by the sole negligence of an indemnified party.
+
+ARTICLE 7 - INSURANCE
+
+7.1 Subcontractor shall maintain commercial general liability insurance of $2,000,000 per occurrence and $4,000,000 aggregate, automobile liability of $1,000,000 combined single limit, workers' compensation as required by law, and umbrella liability of $5,000,000.
+
+7.2 Contractor and Owner shall be named additional insureds on a primary and non-contributory basis, including for completed operations for three (3) years after Final Completion. Subcontractor's policies shall include a waiver of subrogation in favor of Contractor and Owner.
+
+ARTICLE 8 - TERMINATION
+
+8.1 Contractor may terminate this Subcontract for cause if Subcontractor fails to supply enough workers or materials, fails to pay its lower-tier subcontractors, or otherwise breaches, and does not cure within three (3) days after written notice.
+
+8.2 Contractor may terminate for its convenience on seven (7) days' written notice. Subcontractor shall be paid for Work performed through termination plus reasonable demobilization costs, and shall not be entitled to anticipated profit or overhead on unperformed Work.
+
+8.3 If a termination for cause is later found improper, it will be treated as a termination for convenience.
+
+8.4 Contractor may suspend the Work at any time for its convenience. Subcontractor's remedy is an extension of time under Section 5.3.
+
+ARTICLE 9 - DISPUTES
+
+9.1 Disputes shall first be submitted to the parties' senior executives, who shall meet within ten (10) days.
+
+9.2 Unresolved disputes shall be resolved by binding arbitration under the Construction Industry Arbitration Rules of the American Arbitration Association in Harris County, Texas. Contractor may join Subcontractor in any proceeding between Contractor and Owner involving the Work, and Subcontractor agrees to be bound by the result.
+
+9.3 This Subcontract is governed by Texas law. The prevailing party in any dispute is entitled to recover reasonable attorneys' fees.
+
+9.4 Subcontractor shall not file a lien or suit on any claim until it has given Contractor thirty (30) days' written notice.
+
+ARTICLE 10 - GENERAL
+
+10.1 This Subcontract is the entire agreement between the parties and may be amended only in a writing signed by both.
+
+10.2 Subcontractor shall not assign this Subcontract or any payment under it without Contractor's written consent.
