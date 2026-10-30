@@ -79,4 +79,4 @@ The page contains the full contract text and is private until the user shares it
 
 - The results are summaries drawn from the contract text. The page footer says they are not legal advice, and results should be checked against the cited section.
 - To add a follow-up chat to the page, load the artifact-capabilities skill and add an "ask Claude" capability to the template. The base version does not include one.
-- For a page outside Claude, such as GitHub Pages, add `--standalone` to the build command. It writes a complete HTML document instead of the artifact version, and `--banner-text`, `--download-href`, and `--repo-url` add a top bar with a note, a download button, and a repository link.
+- For a page outside Claude, such as GitHub Pages, add `--standalone` to the build command. It writes a complete HTML document instead of the artifact version. `--intro-file` takes an HTML fragment, such as a heading, a paragraph, and a few links, that is shown above the sample.

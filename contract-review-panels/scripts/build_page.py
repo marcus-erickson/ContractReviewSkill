@@ -3,7 +3,7 @@
 
 Usage:
     build_page.py contract.txt results.json out.html [--page-title "Contract Review"]
-                  [--standalone [--banner-text TEXT] [--download-href URL] [--repo-url URL]]
+                  [--standalone [--intro-file intro.html]]
 
 contract.txt  Plain text of the contract, paragraphs separated by blank lines,
               with article and section numbers at the start of their lines.
@@ -13,8 +13,7 @@ results.json  {"contract_title": str, "subtitle": str (optional),
 By default the output is a self-contained HTML page (no doctype, html, head or
 body tags) ready to publish with the Artifact tool. With --standalone it is a
 complete HTML document for GitHub Pages or any other web host, with an optional
-top bar holding a short note, a download button, and a link to the repository.
-In the note, **text** is shown in bold. Citations such as "(Art. 3.2)" or
+intro (an HTML fragment given by --intro-file) above the sample. Citations such as "(Art. 3.2)" or
 "Section 3.2" in the results become links that scroll the contract to that
 section, and numbered margin tags in the contract show which results cite it.
 """
@@ -397,50 +396,53 @@ button.cite:hover { text-decoration-style: solid; }
 
 
 STANDALONE_CSS = """<style>
-/* Standalone page: a slim top bar above the two panes. */
-body { display: flex; flex-direction: column; }
-.banner {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px;
-  padding-block: 8px;
+/* Standalone page: an intro above the sample. The sample keeps a fixed height with its own scrolling panes. */
+html, body { height: auto; min-height: 100%; }
+.intro {
+  padding-block: 28px 6px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  background: var(--panel); border-bottom: 1px solid var(--line);
-  font-size: 13px; line-height: 1.45; color: var(--muted);
 }
-.banner p { margin: 0; min-width: 0; flex: 1 1 320px; }
-.banner strong { color: var(--ink); font-weight: 600; }
-.banner nav { display: flex; flex-wrap: wrap; gap: 8px; }
-.banner a {
-  padding: 5px 12px; border: 1px solid var(--line); border-radius: 5px;
-  background: var(--paper); color: var(--ink); font-weight: 500; text-decoration: none;
+.intro-inner { max-width: 780px; }
+.intro h1 { margin: 2px 0 10px; font-size: clamp(26px, 4.5vw, 34px); line-height: 1.15; font-weight: 600; text-wrap: balance; }
+.intro .lede { margin: 0 0 16px; max-width: 66ch; font-size: 16px; line-height: 1.6; }
+.intro a { color: var(--accent); }
+.lenses { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; padding: 0; list-style: none; }
+.lenses li {
+  display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 5px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--panel); font-size: 14px;
 }
-.banner a.primary { background: var(--accent); border-color: var(--accent); color: var(--paper); }
-.banner a:hover { text-decoration: underline; }
-.app { height: auto; flex: 1 1 0; min-height: 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 26px; }
+.intro .btn {
+  padding: 8px 16px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--paper); color: var(--ink); font-size: 14px; font-weight: 500; text-decoration: none;
+}
+.intro .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+.intro .btn:hover { text-decoration: underline; }
+.intro h2 { margin: 0 0 4px; font-size: 12px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.sample-note { margin: 0 0 6px; max-width: 70ch; font-size: 13.5px; line-height: 1.55; color: var(--muted); }
+.doc-title { margin: 0; font-size: 20px; line-height: 1.25; font-weight: 600; text-wrap: balance; }
+.app { height: clamp(520px, calc(100vh - 16px), 880px); }
 </style>
 """
 
 
-def to_standalone(page, note, download_href, repo_url):
-    """Wrap the artifact fragment in a complete HTML document, with an optional top bar."""
+def to_standalone(page, intro_html):
+    """Wrap the artifact fragment in a complete HTML document, with an optional intro above the sample."""
     head, sep, rest = page.partition('<div class="app"')
     head = head.replace('<meta name="claude:viewport-fit-sides" content="cover">\n', "")
-    note_html = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", html.escape(note, quote=False))
-    links = ""
-    if download_href:
-        links += f'<a class="primary" href="{html.escape(download_href)}" download>Download the skill</a>'
-    if repo_url:
-        links += f'<a href="{html.escape(repo_url)}">View on GitHub</a>'
-    banner = ""
-    if note_html or links:
-        banner = f'<div class="banner"><p>{note_html}</p><nav>{links}</nav></div>\n'
+    intro = ""
+    if intro_html.strip():
+        intro = f'<header class="intro"><div class="intro-inner">\n{intro_html.strip()}\n</div></header>\n'
+        # The intro carries the page's h1, so the contract title inside the sample becomes an h2.
+        rest = rest.replace("<h1>", '<h2 class="doc-title">', 1).replace("</h1>", "</h2>", 1)
     return (
         '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
         + head
         + STANDALONE_CSS
         + "</head>\n<body>\n"
-        + banner
+        + intro
         + sep
         + rest
         + "</body>\n</html>\n"
@@ -508,9 +510,7 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--page-title", default="Contract Review")
     ap.add_argument("--standalone", action="store_true", help="write a complete HTML document instead of an artifact fragment")
-    ap.add_argument("--banner-text", default="", help="standalone only: note shown in the top bar")
-    ap.add_argument("--download-href", default="", help="standalone only: adds a Download the skill button")
-    ap.add_argument("--repo-url", default="", help="standalone only: adds a View on GitHub link")
+    ap.add_argument("--intro-file", default="", help="standalone only: HTML fragment shown above the sample")
     a = ap.parse_args()
 
     text = Path(a.contract).read_text(encoding="utf-8", errors="replace")
@@ -524,7 +524,8 @@ def main():
 
     page, blocks, index, report = build(text, data, a.page_title)
     if a.standalone:
-        page = to_standalone(page, a.banner_text, a.download_href, a.repo_url)
+        intro = Path(a.intro_file).read_text(encoding="utf-8") if a.intro_file else ""
+        page = to_standalone(page, intro)
     Path(a.out).write_text(page, encoding="utf-8")
 
     print(f"Wrote {a.out} ({len(page) / 1024:.0f} KB)")

@@ -63,13 +63,10 @@ The inputs for the sample are in `example/`. `contract.txt` is the contract text
 
 ```
 python3 contract-review-panels/scripts/build_page.py example/contract.txt example/results.json index.html \
-  --page-title "Brookstone Justice Center Review" --standalone \
-  --download-href contract-review-panels.skill \
-  --repo-url https://github.com/marcus-erickson/ContractReviewSkill \
-  --banner-text "**Example output.** The Contract Review Panels skill run on a publicly posted Fort Bend County construction agreement. Select a section reference in a result to jump to the clause."
+  --page-title "Contract Review Skill" --standalone --intro-file example/intro.html
 ```
 
-Without `--standalone`, the script writes the version that Claude publishes as an artifact. With it, the script writes a complete HTML page that works on GitHub Pages or any other web host, with an optional top bar holding a note, the download button, and a link to this repository.
+Without `--standalone`, the script writes the version that Claude publishes as an artifact. With it, the script writes a complete HTML page that works on GitHub Pages or any other web host, with the text from `example/intro.html` above the sample. Edit that file to change the introduction, the buttons, or the links at the top of the page.
 
 ## How it works
 
@@ -89,7 +86,8 @@ The model writes the results, and the scripts handle layout and linking, so the 
 ├── build_skill.py                  Rebuilds the .skill file from the skill folder
 ├── example/
 │   ├── contract.txt                Contract text used for the sample
-│   └── results.json                The five results shown in the sample
+│   ├── results.json                The five results shown in the sample
+│   └── intro.html                  Introduction shown above the sample on the page
 └── contract-review-panels/         The skill itself
     ├── SKILL.md                    Instructions Claude follows
     ├── references/prompts.md       The five prompts
